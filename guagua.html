@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>毛毛星球 MeowHub | 直播与投喂</title>
+  
+  <!-- Clerk 认证 SDK -->
+  <script
+    async
+    crossorigin="anonymous"
+    data-clerk-publishable-key="pk_test_dW5pcXVlLXdlcmV3b2xmLTkzOS5jbGVyay5hY2NvdW50cy5kZXYk"
+    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+    type="text/javascript"
+  ></script>
+
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+      --accent-green: #10b981;
+      --accent-green-hover: #059669;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12), transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.08), transparent 30%);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-clerk-login {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 99px;
+      color: #34d399;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-clerk-login:hover {
+      background: rgba(16, 185, 129, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 99px;
+      color: var(--accent-green);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .live-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .room-sidebar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      padding: 4px 8px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .room-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .room-btn:hover { background: rgba(255, 255, 255, 0.06); }
+    .room-btn.active {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.24));
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #fff;
+    }
+
+    .player-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #ezuikitPlayer { width: 100%; height: 100%; background: #000; }
+    #ezuikitPlayer video, #ezuikitPlayer canvas, #mainVideo {
+      width: 100% !important; height: 100% !important; object-fit: contain !important; display: block !important;
+    }
+
+    .controls-overlay {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+    }
+
+    .player-ctrl-btn {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .player-ctrl-btn:hover:not(:disabled) { background: rgba(0, 0, 0, 0.85); }
+    .player-ctrl-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .card-empty {
+      position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center;
+      color: var(--text-main); background: rgba(9, 10, 15, 0.88); backdrop-filter: blur(4px); z-index: 5;
+    }
+
+    .player-bar {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.01);
+      border-top: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .current-room-name { font-size: 16px; font-weight: 700; color: var(--text-main); }
+
+    /* 投喂大动作条 */
+    .feed-action-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-feed-action {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-feed-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, #059669, #047857);
+      transform: translateY(-1px);
+    }
+
+    .btn-feed-action:disabled {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-sub);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    footer { margin-top: 40px; text-align: center; font-size: 12px; color: var(--text-sub); }
+
+    @media (max-width: 768px) {
+      .container { padding: 16px 12px 32px; }
+      .live-layout { display: flex; flex-direction: column-reverse; }
+      .room-sidebar { width: 100%; }
+      .feed-action-bar { width: 100%; justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-group">
+        <div class="logo-icon">🐾</div>
+        <div class="logo-text">毛毛星球 MeowHub | 直播与投喂</div>
+      </div>
+
+      <div class="header-right">
+        <div id="auth-box">
+          <button class="btn-clerk-login" id="btnClerkSignIn" type="button">🔑 登录 / 注册</button>
+          <div id="clerk-user-avatar-slot"></div>
+        </div>
+        <div class="badge-live">
+          <div class="pulse-dot"></div>
+          <span id="onlineCount">连线中...</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="live-layout">
+      <!-- 左侧机位切换列表 -->
+      <div class="room-sidebar">
+        <div class="sidebar-title">切换直播间机位</div>
+        <div id="roomButtonList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+
+      <!-- 右侧直播视窗与投喂控制栏 -->
+      <div class="player-container">
+        <div class="video-wrapper">
+          <div id="ezuikitPlayer"></div>
+          <video id="mainVideo" autoplay muted playsinline crossorigin="anonymous" controlsList="nodownload" style="display:none;"></video>
+          
+          <div class="controls-overlay">
+            <button class="player-ctrl-btn" id="audioBtn" type="button">🔇 开启声音</button>
+          </div>
+
+          <div class="card-empty" id="playerEmpty">
+            <div>
+              <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;" id="emptyTitle">正在连线设备...</div>
+              <p style="font-size: 13px; color: var(--text-sub);" id="emptyCopy">调取自适应码流中，请稍候...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="player-bar">
+          <div>
+            <span class="current-room-name" id="currentRoomTitle">加载中...</span>
+          </div>
+          
+          <div class="feed-action-bar">
+            <button class="btn-feed-action" id="btnFeedPet" type="button">🍗 立即投喂</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>© 2026 毛毛星球 MeowHub</div>
+    </footer>
+  </div>
+
+  <!-- 播放器核心依赖 -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+  <script src="https://open.ys7.com/sdk/js/2.0/ezuikit.js"></script>
+
+  <script>
+    const API_ENDPOINT = "https://maomao-live-api.yuangchen16.workers.dev";
+
+    let currentRoom = null;
+    let currentRoomId = "1";
+    let currentRoomName = "加载中...";
+    let activeDeviceImei = "";
+    let activeCooldownInterval = null;
+    let roomList = [];
+    let ezPlayer = null;
+    let ezAccessToken = "";
+    let hls = null;
+
+    // Clerk 身份认证
+    const AUTH_RETURN_URL = window.location.origin + window.location.pathname;
+    const ClerkAuth = {
+      isLoggedIn: () => Boolean(window.Clerk && window.Clerk.user),
+      getUser: () => {
+        if (!window.Clerk || !window.Clerk.user) return null;
+        const u = window.Clerk.user;
+        const primaryEmail = u.primaryEmailAddress ? u.primaryEmailAddress.emailAddress : "";
+        const fallbackName = primaryEmail ? primaryEmail.split("@")[0] : "爱心猫友";
+        return {
+          id: u.id,
+          email: primaryEmail,
+          nickname: u.fullName || u.firstName || fallbackName,
+          avatar: u.imageUrl || "🐱"
+        };
+      }
+    };
+
+    let pendingAction = null;
+    async function openClerkSignInModal() {
+      let waitCount = 0;
+      while (!window.Clerk && waitCount < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        waitCount++;
+      }
+      if (!window.Clerk) {
+        alert("认证服务正在连接，请稍等重试！");
+        return;
+      }
+      try {
+        if (!window.Clerk.loaded) await window.Clerk.load();
+        window.Clerk.openSignIn({
+          forceRedirectUrl: AUTH_RETURN_URL,
+          signUpForceRedirectUrl: AUTH_RETURN_URL
+        });
+      } catch (err) {
+        alert("登录呼起失败: " + err.message);
+      }
+    }
+
+    function requireAuth(actionCallback) {
+      if (ClerkAuth.isLoggedIn()) {
+        actionCallback && actionCallback();
+      } else {
+        pendingAction = actionCallback;
+        openClerkSignInModal();
+      }
+    }
+
+    const btnClerkSignIn = document.getElementById("btnClerkSignIn");
+    const clerkUserAvatarSlot = document.getElementById("clerk-user-avatar-slot");
+    btnClerkSignIn?.addEventListener("click", openClerkSignInModal);
+
+    window.addEventListener("load", async () => {
+      let retryCount = 0;
+      while (!window.Clerk && retryCount < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        retryCount++;
+      }
+      if (!window.Clerk) return;
+
+      try {
+        await window.Clerk.load();
+        function refreshAuthUI() {
+          if (window.Clerk.user) {
+            if (btnClerkSignIn) btnClerkSignIn.style.display = "none";
+            if (clerkUserAvatarSlot && !clerkUserAvatarSlot.hasChildNodes()) {
+              window.Clerk.mountUserButton(clerkUserAvatarSlot);
+            }
+            if (pendingAction) {
+              const act = pendingAction;
+              pendingAction = null;
+              act();
+            }
+          } else {
+            if (btnClerkSignIn) btnClerkSignIn.style.display = "inline-flex";
+            if (clerkUserAvatarSlot) clerkUserAvatarSlot.innerHTML = "";
+          }
+        }
+        refreshAuthUI();
+        window.Clerk.addListener(refreshAuthUI);
+      } catch (err) {
+        console.warn("Clerk 加载提示:", err);
+      }
+    });
+
+    // 播放器与投喂交互逻辑
+    const video = document.getElementById("mainVideo");
+    const audioBtn = document.getElementById("audioBtn");
+    const playerEmpty = document.getElementById("playerEmpty");
+    const emptyTitle = document.getElementById("emptyTitle");
+    const emptyCopy = document.getElementById("emptyCopy");
+    const currentRoomTitle = document.getElementById("currentRoomTitle");
+    const roomButtonList = document.getElementById("roomButtonList");
+    const btnFeedPet = document.getElementById("btnFeedPet");
+
+    audioBtn?.addEventListener("click", () => {
+      if (ezPlayer) {
+        const isMuted = audioBtn.textContent.includes("开启");
+        if (isMuted) {
+          try { ezPlayer.openSound(); } catch(e) {}
+          audioBtn.innerHTML = '🔊 静音';
+        } else {
+          try { ezPlayer.closeSound(); } catch(e) {}
+          audioBtn.innerHTML = '🔇 开启声音';
+        }
+      } else if (video) {
+        video.muted = !video.muted;
+        audioBtn.innerHTML = video.muted ? '🔇 开启声音' : '🔊 静音';
+      }
+    });
+
+    // 全网冷却控制器
+    function startBtnCooldown(seconds) {
+      if (activeCooldownInterval) clearInterval(activeCooldownInterval);
+      let remain = parseInt(seconds, 10);
+      if (remain <= 0) {
+        if (btnFeedPet) {
+          btnFeedPet.disabled = false;
+          btnFeedPet.textContent = "🍗 立即投喂";
+        }
+        return;
+      }
+
+      if (btnFeedPet) {
+        btnFeedPet.disabled = true;
+        btnFeedPet.textContent = `全网冷却中 (${remain}s)`;
+      }
+
+      activeCooldownInterval = setInterval(() => {
+        remain--;
+        if (remain <= 0) {
+          clearInterval(activeCooldownInterval);
+          activeCooldownInterval = null;
+          if (btnFeedPet) {
+            btnFeedPet.disabled = false;
+            btnFeedPet.textContent = "🍗 立即投喂";
+          }
+        } else {
+          if (btnFeedPet) btnFeedPet.textContent = `全网冷却中 (${remain}s)`;
+        }
+      }, 1000);
+    }
+
+    async function syncRoomCooldownStatus(roomId, imei) {
+      try {
+        const queryImei = imei || activeDeviceImei || "";
+        const res = await fetch(`${API_ENDPOINT}/api/feeder/status?room=${encodeURIComponent(roomId)}&imei=${encodeURIComponent(queryImei)}`);
+        const json = await res.json();
+        if (json && json.code === 200) {
+          if (json.inCooldown && json.remainingSec > 0) {
+            startBtnCooldown(json.remainingSec);
+          } else {
+            if (activeCooldownInterval) clearInterval(activeCooldownInterval);
+            if (btnFeedPet) {
+              btnFeedPet.disabled = false;
+              btnFeedPet.textContent = "🍗 立即投喂";
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    function playStream(roomIndex) {
+      const room = roomList[roomIndex];
+      if (!room) return;
+
+      currentRoom = room;
+      currentRoomId = String(room.id || (roomIndex + 1));
+      currentRoomName = room.name || `直播间 ${roomIndex + 1}`;
+      if (currentRoomTitle) currentRoomTitle.textContent = currentRoomName;
+      activeDeviceImei = String(room.imei || "").trim();
+
+      syncRoomCooldownStatus(currentRoomId, activeDeviceImei);
+
+      if (roomButtonList) {
+        const allButtons = roomButtonList.querySelectorAll(".room-btn");
+        allButtons.forEach((btn, idx) => {
+          btn.classList.toggle("active", idx === roomIndex);
+        });
+      }
+
+      if (playerEmpty) {
+        playerEmpty.style.display = "grid";
+        if (emptyTitle) emptyTitle.textContent = `正在连接 ${currentRoomName}...`;
+      }
+
+      if (ezPlayer) {
+        try { ezPlayer.stop(); ezPlayer.destroy(); } catch(e) {}
+        ezPlayer = null;
+      }
+      if (hls) {
+        try { hls.stopLoad(); hls.detachMedia(); hls.destroy(); } catch(e) {}
+        hls = null;
+      }
+      if (video) {
+        video.pause();
+        video.src = "";
+        video.load();
+      }
+
+      const ezBox = document.getElementById("ezuikitPlayer");
+      if (ezBox) ezBox.innerHTML = "";
+
+      const rawSerial = (room.deviceSerial || "").trim();
+      let ezUrl = room.ezopenUrl || "";
+      const hlsUrl = room.hlsUrl || room.url || "";
+
+      if (!ezUrl && rawSerial) {
+        if (rawSerial.includes(":")) {
+          const [parentSerial, gbChannel] = rawSerial.split(":");
+          ezUrl = `ezopen://open.ys7.com/${parentSerial}/${gbChannel}.live`;
+        } else {
+          ezUrl = `ezopen://open.ys7.com/${rawSerial}/${room.channelNo || 1}.live`;
+        }
+      }
+      
+      if (window.EZUIKit && ezUrl && ezAccessToken && ezBox) {
+        try {
+          ezBox.style.display = "block";
+          if (video) video.style.display = "none";
+
+          let ezSuccess = false;
+          ezPlayer = new EZUIKit.EZUIPlayer({
+            id: "ezuikitPlayer",
+            autoplay: true,
+            url: ezUrl,
+            accessToken: ezAccessToken,
+            decoderPath: "https://open.ys7.com/sdk/js/2.0",
+            width: ezBox.clientWidth || 800,
+            height: ezBox.clientHeight || 450,
+            splitBasis: 1,
+            audio: 0,
+            handleSuccess: () => {
+              ezSuccess = true;
+              if (playerEmpty) playerEmpty.style.display = "none";
+            },
+            handleError: (err) => {
+              console.warn("EZUIKit 提示，自动切换 HLS:", err);
+              try { if (ezPlayer) { ezPlayer.stop(); ezPlayer = null; } } catch(e){}
+              fallbackHlsPlay(hlsUrl);
+            }
+          });
+
+          setTimeout(() => {
+            if (!ezSuccess && currentRoomId === String(room.id || (roomIndex + 1))) {
+              try { if (ezPlayer) { ezPlayer.stop(); ezPlayer = null; } } catch(e){}
+              fallbackHlsPlay(hlsUrl);
+            }
+          }, 5000);
+
+          return;
+        } catch(e) {
+          console.warn("EZUIPlayer 初始化异常:", e);
+        }
+      }
+
+      fallbackHlsPlay(hlsUrl);
+    }
+
+    function fallbackHlsPlay(hlsUrl) {
+      const ezBox = document.getElementById("ezuikitPlayer");
+      if (ezBox) ezBox.style.display = "none";
+      if (video) video.style.display = "block";
+
+      if (!hlsUrl) {
+        if (emptyTitle) emptyTitle.textContent = `${currentRoomName} 待机中`;
+        if (emptyCopy) emptyCopy.textContent = "暂无可用视频流";
+        return;
+      }
+
+      if (window.Hls && window.Hls.isSupported() && video) {
+        hls = new window.Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 0
+        });
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(video);
+        hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      } else if (video && video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = hlsUrl;
+        video.play().catch(() => {});
+      }
+    }
+
+    video?.addEventListener("playing", () => {
+      if (playerEmpty) playerEmpty.style.display = "none";
+    });
+
+    // 投喂逻辑
+    btnFeedPet?.addEventListener("click", () => {
+      requireAuth(async () => {
+        if (!confirm(`确认要为【${currentRoomName}】的毛孩子投喂出粮吗？`)) return;
+
+        const activeRoom = currentRoom || roomList.find(r => String(r.id) === String(currentRoomId)) || {};
+        let sendImei = activeDeviceImei;
+        if (!sendImei || sendImei.length < 10) {
+          sendImei = String(activeRoom.imei || "").trim();
+          activeDeviceImei = sendImei;
+        }
+
+        const u = ClerkAuth.getUser();
+        btnFeedPet.disabled = true;
+        btnFeedPet.textContent = "出粮中...";
+
+        try {
+          const res = await fetch(`${API_ENDPOINT}/api/feeder/feed`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              roomId: currentRoomId, 
+              imei: sendImei,
+              userId: u ? u.id : "",
+              nickname: u ? u.nickname : "爱心猫友",
+              seconds: 2 
+            })
+          });
+          const json = await res.json();
+
+          if (json.code === 200) {
+            alert("投喂指令下发成功！现场投喂器正在出粮 🍗");
+            const cdTime = json.cooldownSec || activeRoom.cooldownSec || 30;
+            startBtnCooldown(cdTime);
+          } else if (json.code === 429) {
+            alert(json.msg || "冷却中");
+            startBtnCooldown(json.remainingCooldown || 15);
+          } else {
+            alert(json.msg || "投喂失败，请稍后再试");
+            btnFeedPet.disabled = false;
+            btnFeedPet.textContent = "🍗 立即投喂";
+          }
+        } catch (e) {
+          alert("网络异常，指令发送失败");
+          btnFeedPet.disabled = false;
+          btnFeedPet.textContent = "🍗 立即投喂";
+        }
+      });
+    });
+
+    // 页面初始化：拉取房间与鉴权
+    async function initPage() {
+      try {
+        const response = await fetch(`${API_ENDPOINT}/api/rooms`);
+        const data = await response.json();
+        roomList = data.rooms || [];
+
+        if (roomList.length === 0) {
+          if (emptyTitle) emptyTitle.textContent = "暂无在线机位";
+          return;
+        }
+
+        ezAccessToken = data.accessToken || "";
+        const onlineCountEl = document.getElementById("onlineCount");
+        if (onlineCountEl) onlineCountEl.textContent = `${roomList.length} 直播间在线`;
+
+        if (roomButtonList) {
+          roomButtonList.innerHTML = "";
+          roomList.forEach((room, idx) => {
+            const btn = document.createElement("button");
+            btn.className = `room-btn ${idx === 0 ? 'active' : ''}`;
+            btn.innerHTML = `
+              <span>${String(room.name || `直播间 ${idx + 1}`)}</span>
+              <span class="pulse-dot"></span>
+            `;
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              playStream(idx);
+            });
+            roomButtonList.appendChild(btn);
+          });
+        }
+
+        playStream(0);
+      } catch (err) {
+        if (emptyTitle) emptyTitle.textContent = "服务连接异常，请刷新重试";
+      }
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
